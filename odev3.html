@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ürün Yönetimi</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+
+<h1>Ürün Yönetimi</h1>
+
+<button id="getProductsButton">Ürünleri Getir</button>
+<div id="productList"></div>
+
+<h2>Yeni Ürün Ekle</h2>
+<form id="addProductForm">
+    <label for="productName">Ürün Adı:</label>
+    <input type="text" id="productName" name="name" required>
+    <br>
+    <label for="unitPrice">Birim Fiyatı:</label>
+    <input type="number" id="unitPrice" name="unitPrice" required>
+    <br>
+    <button type="submit">Ürün Ekle</button>
+</form>
+
+<h2>Ürünü Sil</h2>
+<label for="productId">Ürün ID:</label>
+<input type="number" id="productId" required>
+<button id="deleteProductButton">Ürünü Sil</button>
+
+<script>
+const apiUrl = "https://northwind.vercel.app/api/products";
+const productList = document.getElementById("productList");
+const addProductForm = document.getElementById("addProductForm");
+const deleteProductButton = document.getElementById("deleteProductButton");
+
+function getProducts() {
+    axios.get(apiUrl)
+        .then(response => {
+            const products = response.data;
+            productList.innerHTML = "<h2>Ürünler</h2>";
+            products.forEach(product => {
+                productList.innerHTML += `<p>ID: ${product.id}, Ürün Adı: ${product.name}, Birim Fiyatı: ${product.unitPrice}</p>`;
+            });
+        })
+        .catch(error => {
+            console.error("Ürünleri alırken hata oluştu: " + error);
+        });
+}
+
+addProductForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    const productName = document.getElementById("productName").value;
+    const unitPrice = parseFloat(document.getElementById("unitPrice").value);
+    addProduct({ name: productName, unitPrice: unitPrice });
+});
+
+function addProduct(newProduct) {
+    axios.post(apiUrl, newProduct)
+        .then(response => {
+            console.log("Ürün başarıyla eklendi.");
+            getProducts(); 
+        })
+        .catch(error => {
+            console.error("Ürün eklerken hata oluştu: " + error);
+        });
+}
+
+deleteProductButton.addEventListener("click", function () {
+    const productId = document.getElementById("productId").value;
+    if (productId) {
+        deleteProduct(productId);
+    }
+});
+
+function deleteProduct(productId) {
+    axios.delete(apiUrl + "/" + productId)
+        .then(response => {
+            console.log("Ürün başarıyla silindi.");
+            getProducts(); 
+        })
+        .catch(error => {
+            console.error("Ürünü silerken hata oluştu: " + error);
+        });
+}
+
+getProducts();
+</script>
+</body>
+</html>
