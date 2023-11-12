@@ -1,0 +1,4 @@
+firefox.settings.services.mozilla.com:HSTS	0	19390	1706907563676,1,0,2
+addons.mozilla.org:HSTS	0	19390	1706907689566,1,0,2
+securedrop.org:HSTS	0	19390	1738443212374,1,1,2
+aus1.torproject.org:HSTS	0	19390	1691139444110,1,0,2

@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title%}
+Secure Chat | Home
+{% endblock %}
+{% block css %}
+<style>
+    
+    *{
+        outline: none;
+    }
+    #rec_user {
+        height: {% if SUS %}77vh{% else %}81vh{% endif %};
+    }
+    #inpChat:focus {
+        outline: none;
+        box-shadow: none;
+    }
+    #searchInput:focus {
+        outline: none;
+        box-shadow: none;
+    }
+    #sendBtn:focus {
+        outline: none;
+        box-shadow: none;
+    }
+    #markUnsuspicious:focus {
+        outline: none;
+        box-shadow: none;
+    }
+    * {margin: 0; box-sizing: border-box; font-family: 'Poppins';}
+
+    .chat-msg {
+      --rad: 20px;
+      --rad-sm: 3px;
+      font: 16px/1.5 Poppins;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      margin: auto;
+      height: 80vh;
+    }
+
+    .msg {
+      position: relative;
+      max-width: 75%;
+      padding: 7px 15px;
+      margin-bottom: 2px;
+    }
+
+    .msg.sent {
+      border-radius: var(--rad) var(--rad-sm) var(--rad-sm) var(--rad);
+      background: #42a5f5;
+      color: #fff;
+      /* moves it to the right */
+      margin-left: auto;
+      padding-right: 50px;
+    }
+
+    .msg.rcvd {
+      border-radius: var(--rad-sm) var(--rad) var(--rad) var(--rad-sm);
+      background: #e4e4e4;
+      color: #555;
+      /* moves it to the left */
+      margin-right: auto;
+      padding-right: 50px;
+    }
+
+    .msg.sent:first-child,
+    .msg.rcvd+.msg.sent {
+      border-top-right-radius: var(--rad);
+    }
+
+    .msg.rcvd:first-child,
+    .msg.sent+.msg.rcvd {
+      border-top-left-radius: var(--rad);
+    }
+
+    .msg::before {
+      content: attr(data-time);
+      font-size: 0.8rem;
+      position: absolute;
+      bottom: 100%;
+      color: #888;
+      white-space: nowrap;
+      /* Hidden by default */
+      display: none;
+    }
+
+    .msg.sent::before {
+      right: 15px;
+    }
+
+    .msg.rcvd::before {
+      left: 15px;
+    }
+
+    .simplebar-content-wrapper{
+        background-color: white;
+        border-radius: 15px;
+        
+    }
+
+
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+{% if Users %}
+<div class="mx-md-4 mt-3 mx-auto">
+    <div class="row mt-4 mx-auto">
+        <div class="col-md-2 col-sm-4">
+            <form method ="POST" id="user" name="user">
+                {% csrf_token %}
+                <div class="d-none d-sm-block">
+                    {% if SUS %}
+                        <button class="btn btn-warning mb-3" name="markUnsuspicious" id="markUnsuspicious" style="width:100%;border-radius: 15px;">Mark Unsuspicious</button>
+                    {% endif %}
+                    <input type="text" class="form-control mb-3" style="border-radius: 15px;" id="searchInput" onkeyup="Search()" placeholder="Search users" autocomplete="off">
+                    <div id="rec_user">
+                        {% for username,name in Users.items  %}
+                            <label style="cursor: pointer;" class="list-group-item clearfix rounded {% if rec == username %}active{% endif %}">
+                                <input type="radio" name="receiver" value="{{username}}" {% if rec == username %} checked{% endif %} hidden>
+                                <b class="list-group-item-heading">{{username}}</b>
+                                <p class="list-group-item-text">{{name}}</p>
+                            </label>
+                       {% endfor %}
+                   </div>
+                </div>
+                <div class="d-sm-none">
+                    <select list="userlist" class="form-control" name="receiver" id="select_rec_user" required>
+                        {% for username,name in Users.items  %}
+                            <option label="{{username}} - {{name}}" value="{{username}}" {% if rec == username %} selected{% endif %}></option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-10 col-sm-8">
+            <div id="chat-msg" class="chat-msg">
+                <div class="chats"></div>
+            </div>
+            <form method ="POST" id="msg" name="msg">
+                {% csrf_token %}
+                {% if rec %}
+                <div class="input-group mt-1 mb-3" >
+                  <input type="text" class="form-control" style="border-radius:12px; margin-top: 10px;" placeholder="Type Message" name="message" autocomplete="off" id="inpChat" onkeyup="emptyCheck()">
+                  <div class="input-group-append">
+                    <button class="btn btn-success" style="border-radius:15px; margin-left:10px; margin-top: 10px; padding: 10px 20px;" type="submit" name="sendmsg" id="sendBtn"><i class="fa fa-paper-plane" aria-hidden="true"></i> Send</button>
+                  </div>
+
+                </div>
+                {% endif %}
+            </form>
+            </div>
+        </div>
+</div>
+
+<script type="text/javascript">
+    new SimpleBar(document.getElementById("rec_user"));
+    new SimpleBar(document.getElementById("chat-msg"));
+    var container = document.querySelector('#chat-msg .simplebar-content-wrapper');
+    {% if rec %}
+        emptyCheck();
+    {% endif %}
+    function emptyCheck(){
+        if(document.getElementById("inpChat").value == ""){
+        document.getElementById("sendBtn").disabled=true;
+        }
+        else{
+            document.getElementById("sendBtn").disabled=false;
+        }
+    }
+
+    $(function(){
+        {% if not rec %} $('#user').submit(); {% endif %}
+        $('#rec_user').click(function(){
+            $("#select_rec_user").val(0).change();
+        });
+        $('#select_rec_user').change(function(){
+            $('#user').submit();
+        });
+    });
+
+    $('#msg').submit(function() {
+        $.ajax({
+            data: $(this).serialize(),
+            type: $(this).attr('method'),
+            url: "/sendMessage/{{rec}}/",
+            success: function(response) {
+                 console.log(response);
+                 $('#msg')[0].reset();
+            }
+        });
+        return false;
+    });
+
+    {% if rec %}
+        setInterval(function(){
+            $.ajax({
+                type: 'GET',
+                url : "/getMessages/{{rec}}/",
+                success: function(response){
+                    if(!($(".chats").html() == $(response).filter('.chats').html())){
+                        $(".chats").replaceWith(response);
+                        container.scrollTo({ top: 1000000});
+                    }
+                }
+            });
+        },500);
+    {% endif %}
+
+    function Search() {
+        var input, Users, li, i, username;
+        input = document.getElementById("searchInput").value.toUpperCase();;
+        Users = document.getElementById("rec_user");
+        li = Users.getElementsByTagName("label");
+        for (i = 0; i < li.length; i++) {
+            username = li[i].getElementsByTagName("b")[0].textContent.toUpperCase();
+            console.log(username,input);
+            if (username.indexOf(input) > -1) {
+                li[i].style.display = "";
+
+            } else {
+                li[i].style.display = "none";
+            }
+        }
+    }
+
+</script>
+{% else %}
+<h1 class="text-white text-center d-flex justify-content-center chat-msg display-6">
+    No User Found
+</h1>
+
+{% endif %}
+
+{% endblock %}
